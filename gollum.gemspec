@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
 
   s.name              = 'gollum'
   s.version           = '2.4.13'
-  s.date              = '2013-04-03'
+  s.date              = '2013-05-11'
   s.rubyforge_project = 'gollum'
   s.license           = 'MIT'
 
@@ -28,6 +28,8 @@ Gem::Specification.new do |s|
   s.add_dependency 'sinatra', '~> 1.4.2'
   s.add_dependency 'mustache', ['>= 0.99.4', '< 1.0.0']
   s.add_dependency 'useragent', '~> 0.5.0'
+  s.add_dependency 'omniauth'
+  s.add_dependency 'omniauth-github'
 
   s.add_development_dependency 'rack-test', '~> 0.6.2'
   s.add_development_dependency 'shoulda', '~> 3.4.0'

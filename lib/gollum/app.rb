@@ -11,6 +11,9 @@ require 'gollum/views/layout'
 require 'gollum/views/editable'
 require 'gollum/views/has_page'
 
+require 'omniauth'
+require 'omniauth-github'
+
 require File.expand_path '../helpers', __FILE__
 
 # Fix to_url
@@ -55,6 +58,21 @@ module Precious
       @@min_ua.detect {|min| ua >= min }
     end
 
+    def protected!
+      unless authorized?
+        redirect to('/auth/github')
+      end
+    end
+
+    def authorized?
+      p session[:nickname]
+      session[:nickname]
+    end
+
+    def get_committer_name
+      session[:nickname]
+    end
+
     # We want to serve public assets for now
     set :public_folder, "#{dir}/public/gollum"
     set :static,         true
@@ -81,6 +99,16 @@ module Precious
       enable :logging, :raise_errors, :dump_errors
     end
 
+    use Rack::Session::Cookie,
+    :key => "wiki.gollum.info",
+    :path => "/",
+    :expire_after => 86400 * 30,
+    :secret => "i m always not the root"
+
+    use OmniAuth::Builder do
+      provider :github, ENV['GITHUB_KEY'], ENV['GITHUB_SECRET']
+    end
+
     before do
       @base_url = url('/', false).chomp('/')
       # above will detect base_path when it's used with map in a config.ru
@@ -94,6 +122,13 @@ module Precious
       redirect clean_url(::File.join(@base_url, page_dir, wiki_new.index_page))
     end
 
+    get '/auth/github/callback' do
+      auth = request.env['omniauth.auth']
+      session[:nickname] = auth.info.nickname
+      session[:name] = auth.info.name
+      redirect to('/')
+    end
+
     # path is set to name if path is nil.
     #   if path is 'a/b' and a and b are dirs, then
     #   path must have a trailing slash 'a/b/' or
@@ -101,7 +136,7 @@ module Precious
     # name, path, version
     def wiki_page(name, path = nil, version = nil, exact = true)
       wiki = wiki_new
-      
+
       path = name if path.nil?
       name = extract_name(name) || wiki.index_page
       path = extract_path(path)
@@ -122,10 +157,11 @@ module Precious
     end
 
     get '/edit/*' do
+      protected!
       wikip = wiki_page(params[:splat].first)
       @name = wikip.name
       @path = wikip.path
-      
+
       wiki = wikip.wiki
       if page = wikip.page
         if wiki.live_preview && page.format.to_s.include?('markdown') && supported_useragent?(request.user_agent)
@@ -147,6 +183,7 @@ module Precious
     end
 
     post '/rename/*' do
+      protected!
       wikip     = wiki_page(params[:splat].first)
       halt 500 if wikip.nil?
       wiki      = wikip.wiki
@@ -183,6 +220,7 @@ module Precious
     end
 
     post '/edit/*' do
+      protected!
       path      = '/' + clean_url(sanitize_empty_params(params[:path])).to_s
       page_name = CGI.unescape(params[:page])
       wiki      = wiki_new
@@ -201,6 +239,7 @@ module Precious
     end
 
     get '/delete/*' do
+      protected!
       wikip = wiki_page(params[:splat].first)
       name = wikip.name
       wiki = wikip.wiki
@@ -211,6 +250,7 @@ module Precious
     end
 
     get '/create/*' do
+      protected!
       wikip = wiki_page(params[:splat].first.gsub('+', '-'))
       @name = wikip.name.to_url
       @path = wikip.path
@@ -233,6 +273,7 @@ module Precious
     end
 
     post '/create' do
+      protected!
       name         = params[:page].to_url
       path         = sanitize_empty_params(params[:path]) || ''
       format       = params[:format].intern
@@ -250,6 +291,7 @@ module Precious
     end
 
     post '/revert/:page/*' do
+      protected!
       wikip        = wiki_page(params[:page])
       @path        = wikip.path
       @name        = wikip.name
@@ -274,6 +316,7 @@ module Precious
     end
 
     post '/preview' do
+      protected!
       wiki     = wiki_new
       @name    = params[:page] || "Preview"
       @page    = wiki.preview_page(@name, params[:content], params[:format])
@@ -393,14 +436,14 @@ module Precious
         @page = page
         @name = name
         @content  = page.formatted_data
-  
+
         # Extensions and layout data
         @editable = true
         @toc_content = wiki.universal_toc ? @page.toc_data : nil
         @mathjax  = wiki.mathjax
         @h1_title = wiki.h1_title
         @bar_side  = wiki.bar_side
-        
+
         mustache :page
       elsif file = wiki.file(fullpath)
         content_type file.mime_type
@@ -430,7 +473,7 @@ module Precious
     # author details are sourced from the session, to be populated by rack middleware ahead of us
     def commit_message
       msg = (params[:message].nil? or params[:message].empty?) ? "[no message]" : params[:message]
-      commit_message = { :message => msg }
+      commit_message = { :message => msg, :name => get_committer_name }
       author_parameters = session['gollum.author']
       commit_message.merge! author_parameters unless author_parameters.nil?
       commit_message

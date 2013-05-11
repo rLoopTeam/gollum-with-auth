@@ -1,3 +1,59 @@
+## NOW SUPPORTING AUTHENTICATION
+
+I've rebuilt the gollum with github oauth, in order to get rid of spams. Maybe writing your own app with gollum gem is a better idea.
+
+Feel free to contribute more auth methods :)
+
+### What do I need to do?
+
+Register a application in github accout settings.
+
+Clone this repo and build gem with
+
+```
+rake build
+```
+
+### How to do I run
+
+Write a Gemfile.
+
+```
+source 'https://rubygems.org'
+
+gem 'gollum', :git => 'git://github.com/aleiphoenix/gollum-with-auth'
+```
+
+pass your github application key and secret to gollum via enviroments vars.
+
+```
+GITHUB_KEY="YOUR APP'S GITHUB KEY"
+GITHUB_SECRET="YOUR APP'S GITHUB SECRET"
+bundle exec gollum
+```
+
+or the RACK way.
+
+```ruby
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'gollum/app'
+
+ENV['GITHUB_KEY'] = "YOUR APP'S GITHUB KEY"
+ENV['GITHUB_SECRET'] = "YOUR APP'S GITHUB SECRET"
+
+gollum_path = File.expand_path(File.dirname(__FILE__)) # CHANGE THIS TO POINT TO YOUR OWN WIKI REPO
+Precious::App.set(:gollum_path, gollum_path)
+Precious::App.set(:default_markup, :markdown) # set your favorite markup language
+Precious::App.set(:wiki_options, {:universal_toc => false})
+run Precious::App
+```
+
+---
+
+### Original README
+
+
 gollum -- A wiki built on top of Git
 ====================================
 
