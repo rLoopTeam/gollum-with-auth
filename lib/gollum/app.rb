@@ -12,7 +12,7 @@ require 'gollum/views/editable'
 require 'gollum/views/has_page'
 
 require 'omniauth'
-require 'omniauth-github'
+require 'omniauth-slack'
 
 require File.expand_path '../helpers', __FILE__
 
@@ -60,7 +60,7 @@ module Precious
 
     def protected!
       unless authorized?
-        redirect to('/auth/github')
+        redirect to('/auth/slack')
       end
     end
 
@@ -106,7 +106,8 @@ module Precious
     :secret => "i m always not the root"
 
     use OmniAuth::Builder do
-      provider :github, ENV['GITHUB_KEY'], ENV['GITHUB_SECRET']
+      # provider :github, ENV['GITHUB_KEY'], ENV['GITHUB_SECRET']
+      provider :slack, ENV['SLACK_KEY'], ENV['SLACK_SECRET'], team: ENV['SLACK_TEAM'], scope: "identify,read"
     end
 
     before do
@@ -122,10 +123,10 @@ module Precious
       redirect clean_url(::File.join(@base_url, page_dir, wiki_new.index_page))
     end
 
-    get '/auth/github/callback' do
+    get '/auth/slack/callback' do
       auth = request.env['omniauth.auth']
-      session[:nickname] = auth.info.nickname
-      session[:name] = auth.info.name
+      session[:nickname] = auth.info[:nickname]
+      session[:name] = auth.info[:name]
       redirect to('/')
     end
 
