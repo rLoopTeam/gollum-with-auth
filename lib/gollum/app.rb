@@ -119,6 +119,7 @@ module Precious
     end
 
     get '/' do
+      protected!
       page_dir = settings.wiki_options[:page_file_dir].to_s
       redirect clean_url(::File.join(@base_url, page_dir, wiki_new.index_page))
     end
