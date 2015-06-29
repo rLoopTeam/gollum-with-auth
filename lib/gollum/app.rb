@@ -152,6 +152,7 @@ module Precious
     end
 
     get '/data/*' do
+      protected!
       if page = wiki_page(params[:splat].first).page
         page.raw_data
       end
@@ -330,6 +331,7 @@ module Precious
     end
 
     get '/history/*' do
+      protected!
       @page        = wiki_page(params[:splat].first).page
       @page_num    = [params[:page].to_i, 1].max
       @versions    = @page.versions :page => @page_num
@@ -337,6 +339,7 @@ module Precious
     end
 
     post '/compare/*' do
+      protected!
       @file     = params[:splat].first
       @versions = params[:versions] || []
       if @versions.size < 2
@@ -358,6 +361,7 @@ module Precious
       \.{2,3}   # match .. or ...
       (.+)      # match the second SHA1
     }x do |path, start_version, end_version|
+      protected!
       wikip        = wiki_page(path)
       @path        = wikip.path
       @name        = wikip.name
@@ -370,6 +374,7 @@ module Precious
     end
 
     get %r{/(.+?)/([0-9a-f]{40})} do
+      protected!
       file_path = params[:captures][0]
       version   = params[:captures][1]
       wikip     = wiki_page(file_path, file_path, version)
@@ -386,6 +391,7 @@ module Precious
     end
 
     get '/search' do
+      protected!
       @query = params[:q]
       wiki = wiki_new
       # Sort wiki search results by count (desc) and then by name (asc)
@@ -400,6 +406,7 @@ module Precious
         /(.+) # capture any path after the "/pages" excluding the leading slash
       )?      # end the optional non-capturing group
     }x do |path|
+      protected!
       @path        = extract_path(path) if path
       wiki_options = settings.wiki_options.merge({ :page_file_dir => @path })
       wiki         = Gollum::Wiki.new(settings.gollum_path, wiki_options)
@@ -410,6 +417,7 @@ module Precious
     end
 
     get '/fileview' do
+      protected!
       wiki = wiki_new
       options = settings.wiki_options
       content = wiki.pages
@@ -424,6 +432,7 @@ module Precious
     end
 
     get '/*' do
+      protected!
       show_page_or_file(params[:splat].first)
     end
 
