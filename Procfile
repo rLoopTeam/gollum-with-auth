@@ -1,0 +1,1 @@
+web: SLACK_TEAM="T06FTKV7H" SLACK_KEY="6537675255.6764292039" SLACK_SECRET="69a8f178549d34e100ce91676614bdcb" bundle exec gollum wiki --config config.rb
